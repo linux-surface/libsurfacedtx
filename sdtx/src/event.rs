@@ -4,7 +4,7 @@ use smallvec::SmallVec;
 
 use crate::{uapi, Device, DeviceType, HardwareError, ProtocolError, RuntimeError};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Event {
     Request,
 
@@ -104,7 +104,7 @@ impl Event {
 
 
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CancelReason {
     Runtime(RuntimeError),
     Hardware(HardwareError),
@@ -144,7 +144,7 @@ impl TryFrom<CancelReason> for super::CancelReason {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BaseState {
     Detached,
     Attached,
@@ -176,7 +176,7 @@ impl TryFrom<BaseState> for super::BaseState {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LatchStatus {
     Closed,
     Opened,
@@ -218,7 +218,7 @@ impl TryFrom<LatchStatus> for super::LatchStatus {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DeviceMode {
     Tablet,
     Laptop,

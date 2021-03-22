@@ -18,7 +18,7 @@ pub enum Error {
     ProtocolError { #[from] source: ProtocolError },
 }
 
-#[derive(thiserror::Error, Debug, Clone, Copy)]
+#[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ProtocolError {
     #[error("Invalid value for base state: {0:#04x}")]
     InvalidBaseState(u16),
@@ -33,7 +33,7 @@ pub enum ProtocolError {
     InvalidCancelReason(u16),
 }
 
-#[derive(thiserror::Error, Debug, Clone, Copy)]
+#[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RuntimeError {
     #[error("Detachment preconditions not fulfilled")]
     NotFeasible,
@@ -45,7 +45,7 @@ pub enum RuntimeError {
     Unknown(u8),
 }
 
-#[derive(thiserror::Error, Debug, Clone, Copy)]
+#[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HardwareError {
     #[error("Failed to open latch")]
     FailedToOpen,
@@ -61,7 +61,7 @@ pub enum HardwareError {
 }
 
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DeviceMode {
     Tablet,
     Laptop,
@@ -94,7 +94,7 @@ impl TryFrom<u16> for DeviceMode {
 }
 
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LatchStatus {
     Closed,
     Opened,
@@ -135,7 +135,7 @@ impl TryFrom<u16> for LatchStatus {
 }
 
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BaseState {
     Detached,
     Attached,
@@ -168,7 +168,7 @@ impl TryFrom<u16> for BaseState {
 }
 
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DeviceType {
     Hid,
     Ssh,
@@ -196,7 +196,7 @@ impl From<u16> for DeviceType {
 }
 
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BaseInfo {
     pub state: BaseState,
     pub device_type: DeviceType,
@@ -216,6 +216,7 @@ impl TryFrom<uapi::BaseInfo> for BaseInfo {
 }
 
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CancelReason {
     Runtime(RuntimeError),
     Hardware(HardwareError),
