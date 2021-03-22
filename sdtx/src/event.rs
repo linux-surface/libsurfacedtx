@@ -1,8 +1,14 @@
-use std::{convert::{TryFrom, TryInto}, fs::File, io::{BufReader, Read}};
+use std::convert::{TryFrom, TryInto};
+use std::io::{BufReader, Read};
+use std::os::unix::io::AsRawFd;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 
+use futures::{AsyncRead, AsyncReadExt, Stream};
 use smallvec::SmallVec;
 
-use crate::{uapi, Device, DeviceType, HardwareError, ProtocolError, RuntimeError};
+use crate::uapi;
+use crate::{Device, DeviceType, HardwareError, ProtocolError, RuntimeError};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Event {
@@ -251,31 +257,27 @@ impl TryFrom<DeviceMode> for super::DeviceMode {
 }
 
 #[derive(Debug)]
-pub struct EventStream<'a> {
-    device: &'a mut Device,
-    reader: BufReader<File>,
+pub struct EventStream<'a, F: AsRawFd> {
+    reader: BufReader<&'a mut F>,
 }
 
-impl<'a> EventStream<'a> {
-    pub(crate) fn from_device(device: &'a mut Device) -> std::io::Result<Self> {
-        let file = device.file.try_clone().unwrap();
-
+impl<'a, F: AsRawFd + Read> EventStream<'a, F> {
+    pub(crate) fn from_device(device: &'a mut Device<F>) -> std::io::Result<Self> {
         device.events_enable()?;
 
-        Ok(EventStream {
-            device,
-            reader: BufReader::new(file),
-        })
+        let reader = BufReader::with_capacity(128, device.file_mut());
+
+        Ok(EventStream { reader })
     }
 }
 
-impl<'a> Drop for EventStream<'a> {
+impl<'a, F: AsRawFd> Drop for EventStream<'a, F> {
     fn drop(&mut self) {
-        let _ = self.device.events_disable();
+        let _ = unsafe { uapi::dtx_events_disable(self.reader.get_ref().as_raw_fd()) };
     }
 }
 
-impl<'a> EventStream<'a> {
+impl<'a, F: AsRawFd + Read> EventStream<'a, F> {
     pub fn read_next_blocking(&mut self) -> std::io::Result<Event> {
         let mut buf_hdr = [0; std::mem::size_of::<uapi::EventHeader>()];
         let mut buf_data = SmallVec::<[u8; 32]>::new();
@@ -291,10 +293,99 @@ impl<'a> EventStream<'a> {
     }
 }
 
-impl<'a> Iterator for EventStream<'a> {
+impl<'a, F: AsRawFd + Read> Iterator for EventStream<'a, F> {
     type Item = std::io::Result<Event>;
 
     fn next(&mut self) -> Option<Self::Item> {
         Some(self.read_next_blocking())
+    }
+}
+
+
+#[derive(Debug)]
+pub struct AsyncEventStream<'a, F: AsRawFd + AsyncRead + Unpin> {
+    file: &'a mut F,
+    buffer: Vec<u8>,
+    offset: usize,
+}
+
+impl<'a, F: AsRawFd + AsyncRead + Unpin> AsyncEventStream<'a, F> {
+    pub(crate) fn from_device(device: &'a mut Device<F>) -> std::io::Result<Self> {
+        device.events_enable()?;
+
+        Ok(AsyncEventStream { file: device.file_mut(), buffer: vec![0; 128], offset: 0 })
+    }
+}
+
+impl<'a, F: AsRawFd + AsyncRead + Unpin> Drop for AsyncEventStream<'a, F> {
+    fn drop(&mut self) {
+        let _ = unsafe { uapi::dtx_events_disable(self.file.as_raw_fd()) };
+    }
+}
+
+impl<'a, F: AsRawFd + AsyncRead + Unpin> AsyncEventStream<'a, F> {
+    pub async fn read_next(&mut self) -> std::io::Result<Event> {
+        const HEADER_LEN: usize = std::mem::size_of::<uapi::EventHeader>();
+
+        while self.offset < HEADER_LEN {
+            self.offset += self.file.read(&mut self.buffer[self.offset..]).await?;
+        }
+
+        let data_hdr = &self.buffer[..HEADER_LEN];
+        let data_hdr: [u8; HEADER_LEN] = data_hdr.try_into().unwrap();
+        let hdr: uapi::EventHeader = unsafe { std::mem::transmute_copy(&data_hdr) };
+
+        let event_len = HEADER_LEN+ hdr.length as usize;
+        self.buffer.resize(event_len, 0);
+
+        while self.offset < event_len {
+            self.offset += self.file.read(&mut self.buffer[self.offset..]).await?;
+        }
+
+        let event = Event::from_data(hdr.code, &self.buffer[HEADER_LEN..event_len]);
+        self.offset = 0;
+
+        Ok(event)
+    }
+}
+
+impl<'a, F: AsRawFd + AsyncRead + Unpin> Stream for AsyncEventStream<'a, F> {
+    type Item = std::io::Result<Event>;
+
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
+        const HEADER_LEN: usize = std::mem::size_of::<uapi::EventHeader>();
+
+        let s = Pin::into_inner(self);
+
+        if s.offset < HEADER_LEN {
+            s.offset += futures::ready!(Pin::new(&mut s.file)
+                .poll_read(cx, &mut s.buffer[s.offset..]))?;
+        }
+
+        if s.offset < HEADER_LEN {
+            return Poll::Pending;
+        }
+
+        let data_hdr = &s.buffer[..HEADER_LEN];
+        let data_hdr: [u8; HEADER_LEN] = data_hdr.try_into().unwrap();
+        let hdr: uapi::EventHeader = unsafe { std::mem::transmute_copy(&data_hdr) };
+
+        let event_len = HEADER_LEN+ hdr.length as usize;
+
+        if s.offset < event_len {
+            s.buffer.resize(event_len, 0);
+
+            s.offset += futures::ready!(Pin::new(&mut s.file)
+                .poll_read(cx, &mut s.buffer[s.offset..]))?;
+        }
+
+        if s.offset < event_len {
+            return Poll::Pending;
+        }
+
+        let event = Event::from_data(hdr.code, &s.buffer[HEADER_LEN..event_len]);
+        s.offset = 0;
+
+        Poll::Ready(Some(Ok(event)))
     }
 }

@@ -1,12 +1,15 @@
 use std::convert::TryFrom;
 use std::fs::File;
+use std::io::Read;
 use std::os::unix::io::AsRawFd;
 use std::path::Path;
+
+use futures::io::AsyncRead;
 
 pub mod uapi;
 
 pub mod event;
-pub use event::{Event, EventStream};
+pub use event::{Event, EventStream, AsyncEventStream};
 
 
 #[derive(thiserror::Error, Debug)]
@@ -223,16 +226,35 @@ pub enum CancelReason {
 }
 
 
-#[derive(Debug)]
-pub struct Device {
-    file: File,
+pub const DEFAULT_DEVICE_FILE_PATH: &str = "/dev/surface/dtx";
+
+pub fn connect() -> std::io::Result<Device<File>> {
+    Device::open()
 }
 
-impl Device {
-    const DEFAULT_DEVICE_FILE_PATH: &'static str = "/dev/surface/dtx";
 
+#[derive(Debug)]
+pub struct Device<F> {
+    file: F,
+}
+
+impl<F> Device<F> {
+    fn new(file: F) -> Self {
+        Device { file }
+    }
+
+    pub fn file(&mut self) -> &F {
+        &self.file
+    }
+
+    pub fn file_mut(&mut self) -> &mut F {
+        &mut self.file
+    }
+}
+
+impl Device<File> {
     pub fn open() -> std::io::Result<Self> {
-        Device::open_path(Device::DEFAULT_DEVICE_FILE_PATH)
+        Device::open_path(DEFAULT_DEVICE_FILE_PATH)
     }
 
     pub fn open_path<P: AsRef<Path>>(path: P) -> std::io::Result<Self> {
@@ -240,7 +262,9 @@ impl Device {
             file: File::open(path)?,
         })
     }
+}
 
+impl<F: AsRawFd> Device<F> {
     pub fn latch_lock(&self) -> std::io::Result<()> {
         unsafe { uapi::dtx_latch_lock(self.file.as_raw_fd()) }
             .map_err(nix_to_io_err)
@@ -307,20 +331,34 @@ impl Device {
         Ok(LatchStatus::try_from(status)?)
     }
 
-    pub fn events(&mut self) -> std::io::Result<EventStream> {
-        EventStream::from_device(self)
-    }
-
-    fn events_enable(&self) -> std::io::Result<()> {
+    pub fn events_enable(&self) -> std::io::Result<()> {
         unsafe { uapi::dtx_events_enable(self.file.as_raw_fd()) }
             .map_err(nix_to_io_err)
             .map(|_| ())
     }
 
-    fn events_disable(&self) -> std::io::Result<()> {
+    pub fn events_disable(&self) -> std::io::Result<()> {
         unsafe { uapi::dtx_events_disable(self.file.as_raw_fd()) }
             .map_err(nix_to_io_err)
             .map(|_| ())
+    }
+}
+
+impl<F: AsRawFd + Read> Device<F> {
+    pub fn events(&mut self) -> std::io::Result<EventStream<F>> {
+        EventStream::from_device(self)
+    }
+}
+
+impl<F: AsRawFd + AsyncRead + Unpin> Device<F> {
+    pub fn events_async(&mut self) -> std::io::Result<AsyncEventStream<F>> {
+        AsyncEventStream::from_device(self)
+    }
+}
+
+impl<F> From<F> for Device<F> {
+    fn from(file: F) -> Self {
+        Self::new(file)
     }
 }
 
