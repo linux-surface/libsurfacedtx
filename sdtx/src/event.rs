@@ -10,6 +10,7 @@ use smallvec::SmallVec;
 use crate::uapi;
 use crate::{Device, DeviceType, HardwareError, ProtocolError, RuntimeError};
 
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Event {
     Request,
@@ -109,7 +110,6 @@ impl Event {
 }
 
 
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CancelReason {
     Runtime(RuntimeError),
@@ -150,6 +150,7 @@ impl TryFrom<CancelReason> for super::CancelReason {
     }
 }
 
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BaseState {
     Detached,
@@ -181,6 +182,7 @@ impl TryFrom<BaseState> for super::BaseState {
         }
     }
 }
+
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LatchStatus {
@@ -224,6 +226,7 @@ impl TryFrom<LatchStatus> for super::LatchStatus {
     }
 }
 
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DeviceMode {
     Tablet,
@@ -255,6 +258,7 @@ impl TryFrom<DeviceMode> for super::DeviceMode {
         }
     }
 }
+
 
 #[derive(Debug)]
 pub struct EventStream<'a, F: AsRawFd> {
