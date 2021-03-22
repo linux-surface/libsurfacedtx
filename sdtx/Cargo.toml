@@ -1,0 +1,10 @@
+[package]
+name = "sdtx"
+version = "0.1.0"
+authors = ["Maximilian Luz <luzmaximilian@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+nix = "0.20.0"
+smallvec = "1.6.1"
+thiserror = "1.0.24"
