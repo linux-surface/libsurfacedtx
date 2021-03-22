@@ -1,9 +1,6 @@
+use std::{convert::{TryFrom, TryInto}, fs::File, io::{BufReader, Read}};
+
 use smallvec::SmallVec;
-use std::{
-    convert::TryInto,
-    fs::File,
-    io::{BufReader, Read},
-};
 
 use crate::{uapi, Device, DeviceType, HardwareError, ProtocolError, RuntimeError};
 
@@ -135,15 +132,14 @@ impl From<u16> for CancelReason {
     }
 }
 
-// TODO: switch to TryFrom
-impl TryInto<super::CancelReason> for CancelReason {
+impl TryFrom<CancelReason> for super::CancelReason {
     type Error = ProtocolError;
 
-    fn try_into(self) -> Result<super::CancelReason, ProtocolError> {
-        match self {
-            Self::Runtime(err)  => Ok(super::CancelReason::Runtime(err)),
-            Self::Hardware(err) => Ok(super::CancelReason::Hardware(err)),
-            Self::Unknown(err)  => Err(ProtocolError::InvalidCancelReason(err)),
+    fn try_from(value: CancelReason) -> Result<Self, ProtocolError> {
+        match value {
+            CancelReason::Runtime(err)  => Ok(Self::Runtime(err)),
+            CancelReason::Hardware(err) => Ok(Self::Hardware(err)),
+            CancelReason::Unknown(err)  => Err(ProtocolError::InvalidCancelReason(err)),
         }
     }
 }
@@ -167,16 +163,15 @@ impl From<u16> for BaseState {
     }
 }
 
-// TODO: switch to TryFrom
-impl TryInto<super::BaseState> for BaseState {
+impl TryFrom<BaseState> for super::BaseState {
     type Error = ProtocolError;
 
-    fn try_into(self) -> Result<super::BaseState, ProtocolError> {
-        match self {
-            Self::Detached     => Ok(super::BaseState::Detached),
-            Self::Attached     => Ok(super::BaseState::Attached),
-            Self::NotFeasible  => Ok(super::BaseState::NotFeasible),
-            Self::Unknown(err) => Err(ProtocolError::InvalidBaseState(err)),
+    fn try_from(value: BaseState) -> Result<super::BaseState, ProtocolError> {
+        match value {
+            BaseState::Detached     => Ok(Self::Detached),
+            BaseState::Attached     => Ok(Self::Attached),
+            BaseState::NotFeasible  => Ok(Self::NotFeasible),
+            BaseState::Unknown(err) => Err(ProtocolError::InvalidBaseState(err)),
         }
     }
 }
@@ -210,16 +205,15 @@ impl From<u16> for LatchStatus {
     }
 }
 
-// TODO: switch to TryFrom
-impl TryInto<super::LatchStatus> for LatchStatus {
+impl TryFrom<LatchStatus> for super::LatchStatus {
     type Error = ProtocolError;
 
-    fn try_into(self) -> Result<super::LatchStatus, ProtocolError> {
-        match self {
-            Self::Closed       => Ok(super::LatchStatus::Closed),
-            Self::Opened       => Ok(super::LatchStatus::Opened),
-            Self::Error(err)   => Ok(super::LatchStatus::Error(err)),
-            Self::Unknown(err) => Err(ProtocolError::InvalidLatchStatus(err)),
+    fn try_from(value: LatchStatus) -> Result<super::LatchStatus, ProtocolError> {
+        match value {
+            LatchStatus::Closed       => Ok(Self::Closed),
+            LatchStatus::Opened       => Ok(Self::Opened),
+            LatchStatus::Error(err)   => Ok(Self::Error(err)),
+            LatchStatus::Unknown(err) => Err(ProtocolError::InvalidLatchStatus(err)),
         }
     }
 }
@@ -243,16 +237,15 @@ impl From<u16> for DeviceMode {
     }
 }
 
-// TODO: switch to TryFrom
-impl TryInto<super::DeviceMode> for DeviceMode {
+impl TryFrom<DeviceMode> for super::DeviceMode {
     type Error = ProtocolError;
 
-    fn try_into(self) -> Result<super::DeviceMode, ProtocolError> {
-        match self {
-            Self::Tablet       => Ok(super::DeviceMode::Tablet),
-            Self::Laptop       => Ok(super::DeviceMode::Laptop),
-            Self::Studio       => Ok(super::DeviceMode::Studio),
-            Self::Unknown(err) => Err(ProtocolError::InvalidDeviceMode(err)),
+    fn try_from(value: DeviceMode) -> Result<super::DeviceMode, ProtocolError> {
+        match value {
+            DeviceMode::Tablet       => Ok(Self::Tablet),
+            DeviceMode::Laptop       => Ok(Self::Laptop),
+            DeviceMode::Studio       => Ok(Self::Studio),
+            DeviceMode::Unknown(err) => Err(ProtocolError::InvalidDeviceMode(err)),
         }
     }
 }
