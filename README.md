@@ -1,5 +1,7 @@
 # `libsurfacedtx`
 
+![CI](https://github.com/linux-surface/libsurfacedtx/workflows/CI/badge.svg)
+
 Library for Linux Surface DTX kernel driver user-space API.
 
 The following crates are provided:
