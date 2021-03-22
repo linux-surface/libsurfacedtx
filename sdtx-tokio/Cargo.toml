@@ -6,5 +6,5 @@ edition = "2018"
 
 [dependencies]
 futures = "0.3.13"
-sdtx = { path = "../sdtx" }
+sdtx = { path = "../sdtx", version = "0.1" }
 tokio = { version = "1.4.0", features = ["fs", "io-util"] }
