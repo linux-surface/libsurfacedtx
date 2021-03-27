@@ -10,6 +10,10 @@ impl AsyncFile {
         AsyncFile { file }
     }
 
+    pub async fn try_clone(&self) -> std::io::Result<Self> {
+        Ok(AsyncFile { file: self.file.try_clone().await? })
+    }
+
     pub fn inner(&self) -> &File {
         &self.file
     }
