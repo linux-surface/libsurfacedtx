@@ -243,7 +243,7 @@ impl<F> Device<F> {
         Device { file }
     }
 
-    pub fn file(&mut self) -> &F {
+    pub fn file(&self) -> &F {
         &self.file
     }
 
