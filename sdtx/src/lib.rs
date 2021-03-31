@@ -6,6 +6,8 @@ use std::path::Path;
 
 use futures::io::AsyncRead;
 
+use tracing::trace;
+
 pub mod uapi;
 
 pub mod event;
@@ -266,39 +268,81 @@ impl Device<File> {
 
 impl<F: AsRawFd> Device<F> {
     pub fn latch_lock(&self) -> std::io::Result<()> {
-        unsafe { uapi::dtx_latch_lock(self.file.as_raw_fd()) }
+        let result = unsafe { uapi::dtx_latch_lock(self.file.as_raw_fd()) }
             .map_err(nix_to_io_err)
-            .map(|_| ())
+            .map(|_| ());
+
+        match result {
+            Ok(()) => trace!(target: "sdtx::ioctl", "dtx_latch_lock"),
+            Err(ref e) => trace!(target: "sdtx::ioctl", error=%e, "dtx_latch_lock"),
+        }
+
+        result
     }
 
     pub fn latch_unlock(&self) -> std::io::Result<()> {
-        unsafe { uapi::dtx_latch_unlock(self.file.as_raw_fd()) }
+        let result = unsafe { uapi::dtx_latch_unlock(self.file.as_raw_fd()) }
             .map_err(nix_to_io_err)
-            .map(|_| ())
+            .map(|_| ());
+
+        match result {
+            Ok(()) => trace!(target: "sdtx::ioctl", "dtx_latch_unlock"),
+            Err(ref e) => trace!(target: "sdtx::ioctl", error=%e, "dtx_latch_unlock"),
+        }
+
+        result
     }
 
     pub fn latch_request(&self) -> std::io::Result<()> {
-        unsafe { uapi::dtx_latch_request(self.file.as_raw_fd()) }
+        let result = unsafe { uapi::dtx_latch_request(self.file.as_raw_fd()) }
             .map_err(nix_to_io_err)
-            .map(|_| ())
+            .map(|_| ());
+
+        match result {
+            Ok(()) => trace!(target: "sdtx::ioctl", "dtx_latch_request"),
+            Err(ref e) => trace!(target: "sdtx::ioctl", error=%e, "dtx_latch_request"),
+        }
+
+        result
     }
 
     pub fn latch_confirm(&self) -> std::io::Result<()> {
-        unsafe { uapi::dtx_latch_confirm(self.file.as_raw_fd()) }
+        let result = unsafe { uapi::dtx_latch_confirm(self.file.as_raw_fd()) }
             .map_err(nix_to_io_err)
-            .map(|_| ())
+            .map(|_| ());
+
+        match result {
+            Ok(()) => trace!(target: "sdtx::ioctl", "dtx_latch_confirm"),
+            Err(ref e) => trace!(target: "sdtx::ioctl", error=%e, "dtx_latch_confirm"),
+        }
+
+        result
     }
 
     pub fn latch_heartbeat(&self) -> std::io::Result<()> {
-        unsafe { uapi::dtx_latch_heartbeat(self.file.as_raw_fd()) }
+        let result = unsafe { uapi::dtx_latch_heartbeat(self.file.as_raw_fd()) }
             .map_err(nix_to_io_err)
-            .map(|_| ())
+            .map(|_| ());
+
+        match result {
+            Ok(()) => trace!(target: "sdtx::ioctl", "dtx_latch_heartbeat"),
+            Err(ref e) => trace!(target: "sdtx::ioctl", error=%e, "dtx_latch_heartbeat"),
+        }
+
+        result
     }
 
     pub fn latch_cancel(&self) -> std::io::Result<()> {
-        unsafe { uapi::dtx_latch_cancel(self.file.as_raw_fd()) }
+        let result = unsafe { uapi::dtx_latch_cancel(self.file.as_raw_fd()) }
             .map_err(nix_to_io_err)
-            .map(|_| ())
+            .map(|_| ());
+
+        match result {
+            Ok(()) => trace!(target: "sdtx::ioctl", "dtx_latch_cancel"),
+            Err(ref e) => trace!(target: "sdtx::ioctl", error=%e, "dtx_latch_cancel"),
+        }
+
+        result
     }
 
     pub fn get_base_info(&self) -> Result<BaseInfo, Error> {
@@ -307,40 +351,84 @@ impl<F: AsRawFd> Device<F> {
             base_id: 0,
         };
 
-        unsafe { uapi::dtx_get_base_info(self.file.as_raw_fd(), &mut info as *mut uapi::BaseInfo) }
-            .map_err(nix_to_dtx_err)?;
+        let result = unsafe { uapi::dtx_get_base_info(self.file.as_raw_fd(), &mut info as *mut uapi::BaseInfo) }
+            .map_err(nix_to_dtx_err);
 
-        Ok(BaseInfo::try_from(info)?)
+        let state = info.state;
+        let base_id = info.base_id;
+
+        match result {
+            Ok(_) => {
+                trace!(target: "sdtx::ioctl", state, base_id, "dtx_get_base_info");
+                Ok(BaseInfo::try_from(info)?)
+            },
+            Err(e) => {
+                trace!(target: "sdtx::ioctl", error=%e, "dtx_get_base_info");
+                Err(e)
+            }
+        }
     }
 
     pub fn get_device_mode(&self) -> Result<DeviceMode, Error> {
         let mut mode: u16 = 0;
 
-        unsafe { uapi::dtx_get_device_mode(self.file.as_raw_fd(), &mut mode as *mut u16) }
-            .map_err(nix_to_dtx_err)?;
+        let result = unsafe { uapi::dtx_get_device_mode(self.file.as_raw_fd(), &mut mode as *mut u16) }
+            .map_err(nix_to_dtx_err);
 
-        Ok(DeviceMode::try_from(mode)?)
+        match result {
+            Ok(_) => {
+                trace!(target: "sdtx::ioctl", mode, "dtx_get_device_mode");
+                Ok(DeviceMode::try_from(mode)?)
+            },
+            Err(e) => {
+                trace!(target: "sdtx::ioctl", error=%e, "dtx_get_device_mode");
+                Err(e)
+            }
+        }
     }
 
     pub fn get_latch_status(&self) -> Result<LatchStatus, Error> {
         let mut status: u16 = 0;
 
-        unsafe { uapi::dtx_get_latch_status(self.file.as_raw_fd(), &mut status as *mut u16) }
-            .map_err(nix_to_dtx_err)?;
+        let result = unsafe { uapi::dtx_get_latch_status(self.file.as_raw_fd(), &mut status as *mut u16) }
+            .map_err(nix_to_dtx_err);
 
-        Ok(LatchStatus::try_from(status)?)
+        match result {
+            Ok(_) => {
+                trace!(target: "sdtx::ioctl", status, "dtx_get_latch_status");
+                Ok(LatchStatus::try_from(status)?)
+            },
+            Err(e) => {
+                trace!(target: "sdtx::ioctl", error=%e, "dtx_get_latch_status");
+                Err(e)
+            }
+        }
     }
 
     pub fn events_enable(&self) -> std::io::Result<()> {
-        unsafe { uapi::dtx_events_enable(self.file.as_raw_fd()) }
+        let result = unsafe { uapi::dtx_events_enable(self.file.as_raw_fd()) }
             .map_err(nix_to_io_err)
-            .map(|_| ())
+            .map(|_| ());
+
+        match result {
+            Ok(()) => trace!(target: "sdtx::ioctl", "dtx_events_enable"),
+            Err(ref e) => trace!(target: "sdtx::ioctl", error=%e, "dtx_events_enable"),
+        }
+
+        result
     }
 
     pub fn events_disable(&self) -> std::io::Result<()> {
-        unsafe { uapi::dtx_events_disable(self.file.as_raw_fd()) }
+        let result = unsafe { uapi::dtx_events_disable(self.file.as_raw_fd()) }
             .map_err(nix_to_io_err)
-            .map(|_| ())
+            .map(|_| ());
+
+        match result {
+            Ok(()) => trace!(target: "sdtx::ioctl", "dtx_events_disable"),
+            Err(ref e) => trace!(target: "sdtx::ioctl", error=%e, "dtx_events_disable"),
+        }
+
+        result
     }
 }
 
