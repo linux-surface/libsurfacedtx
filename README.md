@@ -6,7 +6,7 @@ Library for Linux Surface DTX kernel driver user-space API.
 
 The following crates are provided:
 - `sdtx`: Main API wrapper.
-- `sdtx-tokio`: [`tokio`][tokio] compatibility layer for asynchronous event handing.
+- `sdtx-tokio`: [`tokio`][tokio] compatibility layer for asynchronous event handling.
 
 Used by [`surface-control`][surface-control] and [`surface-dtx-daemon`][surface-dtx-daemon].
 
