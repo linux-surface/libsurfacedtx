@@ -48,7 +48,7 @@ impl Event {
                 }
 
                 Event::Request
-            }
+            },
 
             uapi::SDTX_EVENT_CANCEL => {
                 if data.len() != std::mem::size_of::<u16>() {
@@ -60,7 +60,7 @@ impl Event {
                 let reason = CancelReason::from(reason);
 
                 Event::Cancel { reason }
-            }
+            },
 
             uapi::SDTX_EVENT_BASE_CONNECTION => {
                 if data.len() != 2 * std::mem::size_of::<u16>() {
@@ -78,7 +78,7 @@ impl Event {
                 let id = (base & 0xff) as u8;
 
                 Event::BaseConnection { state, device_type, id }
-            }
+            },
 
             uapi::SDTX_EVENT_LATCH_STATUS => {
                 if data.len() != std::mem::size_of::<u16>() {
@@ -90,7 +90,7 @@ impl Event {
                 let status = LatchStatus::from(status);
 
                 Event::LatchStatus { status }
-            }
+            },
 
             uapi::SDTX_EVENT_DEVICE_MODE => {
                 if data.len() != std::mem::size_of::<u16>() {
@@ -102,7 +102,7 @@ impl Event {
                 let mode = DeviceMode::from(mode);
 
                 Event::DeviceMode { mode }
-            }
+            },
 
             code => Event::Unknown { code, data: data.into() },
         }
@@ -339,7 +339,7 @@ impl<'a, F: AsRawFd + AsyncRead + Unpin> AsyncEventStream<'a, F> {
         let data_hdr: [u8; HEADER_LEN] = data_hdr.try_into().unwrap();
         let hdr: uapi::EventHeader = unsafe { std::mem::transmute_copy(&data_hdr) };
 
-        let event_len = HEADER_LEN+ hdr.length as usize;
+        let event_len = HEADER_LEN + hdr.length as usize;
         self.buffer.resize(event_len, 0);
 
         while self.offset < event_len {
@@ -374,7 +374,7 @@ impl<'a, F: AsRawFd + AsyncRead + Unpin> Stream for AsyncEventStream<'a, F> {
         let data_hdr: [u8; HEADER_LEN] = data_hdr.try_into().unwrap();
         let hdr: uapi::EventHeader = unsafe { std::mem::transmute_copy(&data_hdr) };
 
-        let event_len = HEADER_LEN+ hdr.length as usize;
+        let event_len = HEADER_LEN + hdr.length as usize;
 
         if s.offset < event_len {
             s.buffer.resize(event_len, 0);
