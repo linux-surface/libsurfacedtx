@@ -269,7 +269,6 @@ impl Device<File> {
 impl<F: AsRawFd> Device<F> {
     pub fn latch_lock(&self) -> std::io::Result<()> {
         let result = unsafe { uapi::dtx_latch_lock(self.file.as_raw_fd()) }
-            .map_err(nix_to_io_err)
             .map(|_| ());
 
         match result {
@@ -277,12 +276,11 @@ impl<F: AsRawFd> Device<F> {
             Err(ref e) => trace!(target: "sdtx::ioctl", error=%e, "dtx_latch_lock"),
         }
 
-        result
+        Ok(result?)
     }
 
     pub fn latch_unlock(&self) -> std::io::Result<()> {
         let result = unsafe { uapi::dtx_latch_unlock(self.file.as_raw_fd()) }
-            .map_err(nix_to_io_err)
             .map(|_| ());
 
         match result {
@@ -290,12 +288,11 @@ impl<F: AsRawFd> Device<F> {
             Err(ref e) => trace!(target: "sdtx::ioctl", error=%e, "dtx_latch_unlock"),
         }
 
-        result
+        Ok(result?)
     }
 
     pub fn latch_request(&self) -> std::io::Result<()> {
         let result = unsafe { uapi::dtx_latch_request(self.file.as_raw_fd()) }
-            .map_err(nix_to_io_err)
             .map(|_| ());
 
         match result {
@@ -303,12 +300,11 @@ impl<F: AsRawFd> Device<F> {
             Err(ref e) => trace!(target: "sdtx::ioctl", error=%e, "dtx_latch_request"),
         }
 
-        result
+        Ok(result?)
     }
 
     pub fn latch_confirm(&self) -> std::io::Result<()> {
         let result = unsafe { uapi::dtx_latch_confirm(self.file.as_raw_fd()) }
-            .map_err(nix_to_io_err)
             .map(|_| ());
 
         match result {
@@ -316,12 +312,11 @@ impl<F: AsRawFd> Device<F> {
             Err(ref e) => trace!(target: "sdtx::ioctl", error=%e, "dtx_latch_confirm"),
         }
 
-        result
+        Ok(result?)
     }
 
     pub fn latch_heartbeat(&self) -> std::io::Result<()> {
         let result = unsafe { uapi::dtx_latch_heartbeat(self.file.as_raw_fd()) }
-            .map_err(nix_to_io_err)
             .map(|_| ());
 
         match result {
@@ -329,12 +324,11 @@ impl<F: AsRawFd> Device<F> {
             Err(ref e) => trace!(target: "sdtx::ioctl", error=%e, "dtx_latch_heartbeat"),
         }
 
-        result
+        Ok(result?)
     }
 
     pub fn latch_cancel(&self) -> std::io::Result<()> {
         let result = unsafe { uapi::dtx_latch_cancel(self.file.as_raw_fd()) }
-            .map_err(nix_to_io_err)
             .map(|_| ());
 
         match result {
@@ -342,7 +336,7 @@ impl<F: AsRawFd> Device<F> {
             Err(ref e) => trace!(target: "sdtx::ioctl", error=%e, "dtx_latch_cancel"),
         }
 
-        result
+        Ok(result?)
     }
 
     pub fn get_base_info(&self) -> Result<BaseInfo, Error> {
@@ -407,7 +401,6 @@ impl<F: AsRawFd> Device<F> {
 
     pub fn events_enable(&self) -> std::io::Result<()> {
         let result = unsafe { uapi::dtx_events_enable(self.file.as_raw_fd()) }
-            .map_err(nix_to_io_err)
             .map(|_| ());
 
         match result {
@@ -415,12 +408,11 @@ impl<F: AsRawFd> Device<F> {
             Err(ref e) => trace!(target: "sdtx::ioctl", error=%e, "dtx_events_enable"),
         }
 
-        result
+        Ok(result?)
     }
 
     pub fn events_disable(&self) -> std::io::Result<()> {
         let result = unsafe { uapi::dtx_events_disable(self.file.as_raw_fd()) }
-            .map_err(nix_to_io_err)
             .map(|_| ());
 
         match result {
@@ -428,7 +420,7 @@ impl<F: AsRawFd> Device<F> {
             Err(ref e) => trace!(target: "sdtx::ioctl", error=%e, "dtx_events_disable"),
         }
 
-        result
+        Ok(result?)
     }
 }
 
@@ -451,17 +443,6 @@ impl<F> From<F> for Device<F> {
 }
 
 
-fn nix_to_io_err(err: nix::Error) -> std::io::Error {
-    use std::io::{Error, ErrorKind};
-
-    match err {
-        nix::Error::Sys(errno)           => Error::from_raw_os_error(errno as i32),
-        nix::Error::InvalidPath          => Error::new(ErrorKind::InvalidInput, err),
-        nix::Error::InvalidUtf8          => Error::new(ErrorKind::InvalidData, err),
-        nix::Error::UnsupportedOperation => Error::new(ErrorKind::Other, err),
-    }
-}
-
 fn nix_to_dtx_err(err: nix::Error) -> Error {
-    nix_to_io_err(err).into()
+    std::io::Error::from(err).into()
 }
