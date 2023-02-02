@@ -81,7 +81,7 @@ impl std::fmt::Display for DeviceMode {
             DeviceMode::Studio => "Studio",
         };
 
-        write!(f, "{}", name)
+        write!(f, "{name}")
     }
 }
 
@@ -111,7 +111,7 @@ impl std::fmt::Display for LatchStatus {
         match self {
             LatchStatus::Closed => write!(f, "Closed"),
             LatchStatus::Opened => write!(f, "Opened"),
-            LatchStatus::Error(err) => write!(f, "Error: {}", err),
+            LatchStatus::Error(err) => write!(f, "Error: {err}"),
         }
     }
 }
@@ -155,7 +155,7 @@ impl std::fmt::Display for BaseState {
             BaseState::NotFeasible => "NotFeasible",
         };
 
-        write!(f, "{}", name)
+        write!(f, "{name}")
     }
 }
 
@@ -185,7 +185,7 @@ impl std::fmt::Display for DeviceType {
         match *self {
             DeviceType::Hid        => write!(f, "HID"),
             DeviceType::Ssh        => write!(f, "SSH"),
-            DeviceType::Unknown(v) => write!(f, "{:#02x}", v),
+            DeviceType::Unknown(v) => write!(f, "{v:#02x}"),
         }
     }
 }
