@@ -5,8 +5,8 @@ authors = ["Maximilian Luz <luzmaximilian@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-futures = "0.3.30"
+futures = "0.3.31"
 nix = { version = "0.29.0", features = ["ioctl"] }
-smallvec = "1.13.2"
-thiserror = "1.0.63"
-tracing = "0.1.40"
+smallvec = "1.15.0"
+thiserror = "2.0.12"
+tracing = "0.1.41"
