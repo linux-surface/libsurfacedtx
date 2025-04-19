@@ -275,13 +275,13 @@ impl<'a, F: AsRawFd + Read> EventStream<'a, F> {
     }
 }
 
-impl<'a, F: AsRawFd> Drop for EventStream<'a, F> {
+impl<F: AsRawFd> Drop for EventStream<'_, F> {
     fn drop(&mut self) {
         let _ = unsafe { uapi::dtx_events_disable(self.reader.get_ref().as_raw_fd()) };
     }
 }
 
-impl<'a, F: AsRawFd + Read> EventStream<'a, F> {
+impl<F: AsRawFd + Read> EventStream<'_, F> {
     pub fn read_next_blocking(&mut self) -> std::io::Result<Event> {
         let mut buf_hdr = [0; std::mem::size_of::<uapi::EventHeader>()];
         let mut buf_data = SmallVec::<[u8; 32]>::new();
@@ -297,7 +297,7 @@ impl<'a, F: AsRawFd + Read> EventStream<'a, F> {
     }
 }
 
-impl<'a, F: AsRawFd + Read> Iterator for EventStream<'a, F> {
+impl<F: AsRawFd + Read> Iterator for EventStream<'_, F> {
     type Item = std::io::Result<Event>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -321,13 +321,13 @@ impl<'a, F: AsRawFd + AsyncRead + Unpin> AsyncEventStream<'a, F> {
     }
 }
 
-impl<'a, F: AsRawFd + AsyncRead + Unpin> Drop for AsyncEventStream<'a, F> {
+impl<F: AsRawFd + AsyncRead + Unpin> Drop for AsyncEventStream<'_, F> {
     fn drop(&mut self) {
         let _ = unsafe { uapi::dtx_events_disable(self.file.as_raw_fd()) };
     }
 }
 
-impl<'a, F: AsRawFd + AsyncRead + Unpin> AsyncEventStream<'a, F> {
+impl<F: AsRawFd + AsyncRead + Unpin> AsyncEventStream<'_, F> {
     pub async fn read_next(&mut self) -> std::io::Result<Event> {
         const HEADER_LEN: usize = std::mem::size_of::<uapi::EventHeader>();
 
@@ -353,7 +353,7 @@ impl<'a, F: AsRawFd + AsyncRead + Unpin> AsyncEventStream<'a, F> {
     }
 }
 
-impl<'a, F: AsRawFd + AsyncRead + Unpin> Stream for AsyncEventStream<'a, F> {
+impl<F: AsRawFd + AsyncRead + Unpin> Stream for AsyncEventStream<'_, F> {
     type Item = std::io::Result<Event>;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
